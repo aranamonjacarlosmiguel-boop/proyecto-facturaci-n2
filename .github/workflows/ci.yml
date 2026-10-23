@@ -1,0 +1,54 @@
+name: Pipeline CI Comercial Chiclayo
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  auditoria-y-pruebas:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Obtener codigo fuente
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 3. Instalar herramientas QA
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+
+      - name: 4. Auditar codigo con Flake8
+        run: |
+          flake8 src/ scripts/ --max-line-length=100
+
+      - name: 5. Ejecutar pruebas unitarias con Pytest
+        run: |
+          pytest tests/test_facturacion_pytest.py
+
+      - name: 6. Ejecutar script de auditoria
+        env:
+          PYTHONPATH: .
+        run: |
+          python scripts/auditoria_sistema.py
+
+      - name: 7. Publicar reporte de auditoria
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-auditoria-calidad
+          path: reporte_auditoria.txt
+
+      - name: 8. Generar resumen automatizado
+        run: |
+          echo "## Resumen de Ejecución CI - Comercial Chiclayo" >> $GITHUB_STEP_SUMMARY
+          echo "- Auditoría de código con Flake8 ejecutada." >> $GITHUB_STEP_SUMMARY
+          echo "- Pruebas unitarias con Pytest ejecutadas." >> $GITHUB_STEP_SUMMARY
+          echo "- Script de auditoría interna ejecutado." >> $GITHUB_STEP_SUMMARY
+          echo "- Reporte de auditoría publicado como artefacto." >> $GITHUB_STEP_SUMMARY
+
